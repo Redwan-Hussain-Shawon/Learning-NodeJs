@@ -1,5 +1,8 @@
 const userModel = require("../models/User");
-
+const bcrypt = require('bcryptjs');
+const jwt = require("jsonwebtoken");
+const dotenv = require('dotenv');
+dotenv.config();
 
 
 const loginPage = (req, res) => { 
@@ -7,10 +10,54 @@ const loginPage = (req, res) => {
         layout:false
     })
 };
-const adminLogin = (req, res) => { 
-  
+const adminLogin = async (req, res) => { 
+    const { username, password } = req.body;
+    try {
+        const user = await userModel.findOne({ username: username });
+        if (!user) {
+          return res.status(401).json({ message: "Invalid Credentials username" });
+        }
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+          return res.status(401).json({ message: "Invalid Credentials password" });
+        }
+        const jwtData = {
+          user_id: user._id,
+          role: user.role,
+          fullname: user.fullname,
+        };
+        const token = jwt.sign(jwtData, process.env.JWT_SECRET, {
+          expiresIn: "1d",
+        });
+        res.cookie("token", token, {
+          httpOnly: true,
+          sameSite: "strict",
+          secure: true,
+          maxAge: 1000 * 60 * 60 * 24,
+        });
+        res.redirect("/admin/users");
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({ message: 'Internal Server Error' });
+   }
+    
 };
-const logout = (req, res) => { };
+
+
+
+
+const logout = (req, res) => {
+    res.clearCookie("token");
+    res.redirect('/admin')
+};
+ 
+
+const adminDashboard = (req, res) => {
+    res.render('admin/dashboard', {
+        fullname: req.fullname,
+        role: req.role
+    })   
+}
 
 const allUsers = async (req, res) => {
     const users = await userModel.find();
@@ -80,13 +127,14 @@ const deleteUser = async (req, res) => {
 };
 
 module.exports = {
-    loginPage,
-    adminLogin,
-    logout,
-    allUsers,
-    addUserPage,
-    addUser,
-    updateUserPage,
-    updateUser,
-    deleteUser
-}
+  loginPage,
+  adminLogin,
+  logout,
+  allUsers,
+  addUserPage,
+  addUser,
+  updateUserPage,
+  updateUser,
+  deleteUser,
+  adminDashboard,
+};

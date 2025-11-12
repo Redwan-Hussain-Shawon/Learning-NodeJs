@@ -1,0 +1,82 @@
+<div id="admin-content">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-10">
+                <h1 class="admin-heading"><i class="fa fa-gears"></i> All Categories</h1>
+            </div>
+            <div class="col-md-2">
+                <a class="add-new" href="/admin/add-category">add category</a>
+            </div>
+            <div class="col-md-12">
+                <div id="categoryTable">
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<%- contentFor('tabulatorJS') %>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+        crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tabulator/6.3.1/js/tabulator.min.js"
+        integrity="sha512-8+qwMD/110YLl5T2bPupMbPMXlARhei2mSxerb/0UWZuvcg4NjG7FdxzuuvDs2rBr/KCNqhyBDe8W3ykKB1dzA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <script>
+        const tableData = <%- JSON.stringify(categories) %>;
+        var table = new Tabulator("#categoryTable", {
+            data: tableData,           //load row data from array
+            layout: "fitColumns",      //fit columns to width of table
+            history: true,             //allow undo and redo actions on the table
+            pagination: true,       //paginate the data
+            paginationSize: 10,         //allow 7 rows per page of data
+            paginationSizeSelector: [10, 50, 100],
+
+            columns: [                 //define the table columns
+                { title: "S.No", formatter:'rownum',width:100,hozAlign:'center' },
+                { title: "Name", field: "name", headerFilter: "input" },
+                { title: "Slug", field: "slug", headerFilter: "input" },
+               
+                {
+                    title: "Action",
+                    formatter: function (cell, formatterParams, onRendered) {
+                        return `
+                <a href="/admin/update-category/${cell.getData()._id}" class="btn btn-sm btn-success">Edit</a>
+                <a href="#" onclick="deleteUser('${cell.getData()._id}')" class="btn btn-sm btn-danger">Delete</a>
+            `;
+                    },
+                },
+            ],
+        });
+    
+        // Delete User
+
+        async function deleteUser(id) {
+            if (confirm("Are you sure you want to delete this category?")) {
+                try {
+                    const response = await fetch(`/admin/delete-category/${id}`, {
+                        method: "DELETE",
+                    })
+                    const data = await response.json();
+                    if (data.status) {
+                        window.location.reload();
+                        return
+                    }
+                    alert('Internal Server Error');
+
+                } catch (error) {
+                    console.log(error);
+                    alert('Internal Server Error');
+                }
+            }
+        }
+    </script>
+
+
+    <%- contentFor('tabulatorCSS') %>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/6.3.1/css/tabulator.min.css"
+            integrity="sha512-RYFH4FFdhD/FdA+OVEbFVqd5ifR+Dnx2M7eWcmkcMexlIoxNgm89ieeVyHYb8xChuYBtbrasMTlo02cLnidjtQ=="
+            crossorigin="anonymous" referrerpolicy="no-referrer" />
